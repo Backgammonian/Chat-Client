@@ -122,6 +122,12 @@ namespace ChatClient
 
                 case PackageTypes.NewMessageInRoom:
                     Debug.WriteLine("NewMessageInRoom");
+
+                    var newMessageInRoom = JsonConvert.DeserializeObject<(Message, string)>(json);
+                    if (SelectedRoom.ID == newMessageInRoom.Item2)
+                    {
+                        RoomMessages.Add(newMessageInRoom.Item1);
+                    }
                     break;
 
                 default:
