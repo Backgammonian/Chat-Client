@@ -4,7 +4,7 @@ Client of basic chat application based on transmission control protocol (TCP).
 * Connection to chat server
 * Switching among multiple rooms on the server
 * Sending text messages to the room
-* Ability to see list of other clients in the room
+* Ability to see the list of other clients on the server
 ## Demonstration
 ![demo](demo.gif)
 ## Libraries used in this project:
