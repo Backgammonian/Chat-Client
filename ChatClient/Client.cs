@@ -9,23 +9,20 @@ using Shared;
 
 namespace ChatClient
 {
-    //create one Client object for each connection to server
     public class Client
     {
-        private readonly Socket _client;
+        private Socket _client;
         private readonly Task _listenTask;
         private readonly CancellationTokenSource _tokenSource;
+        private readonly byte[] _keepAlive;
 
         public Client()
         {
             var size = Marshal.SizeOf((uint)0);
-            var keepAlive = new byte[size * 3];
-            Buffer.BlockCopy(BitConverter.GetBytes(TcpKeepAliveConstants.TurnKeepAliveOn), 0, keepAlive, 0, size);
-            Buffer.BlockCopy(BitConverter.GetBytes(TcpKeepAliveConstants.TimeWithoutActivity), 0, keepAlive, size, size);
-            Buffer.BlockCopy(BitConverter.GetBytes(TcpKeepAliveConstants.KeepAliveInterval), 0, keepAlive, size * 2, size);
-
-            _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _client.IOControl(IOControlCode.KeepAliveValues, keepAlive, null);
+            _keepAlive = new byte[size * 3];
+            Buffer.BlockCopy(BitConverter.GetBytes(TcpKeepAliveConstants.TurnKeepAliveOn), 0, _keepAlive, 0, size);
+            Buffer.BlockCopy(BitConverter.GetBytes(TcpKeepAliveConstants.TimeWithoutActivity), 0, _keepAlive, size, size);
+            Buffer.BlockCopy(BitConverter.GetBytes(TcpKeepAliveConstants.KeepAliveInterval), 0, _keepAlive, size * 2, size);
 
             _tokenSource = new CancellationTokenSource();
             var token = _tokenSource.Token;
@@ -40,6 +37,9 @@ namespace ChatClient
         {
             try
             {
+                _client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                _client.IOControl(IOControlCode.KeepAliveValues, _keepAlive, null);
+
                 await _client.ConnectAsync(serverEndPoint);
                 ServerAddress = serverEndPoint;
 
@@ -100,7 +100,10 @@ namespace ChatClient
 
         public void StartListen()
         {
-            _listenTask.Start();
+            if (_client != null)
+            {
+                _listenTask.Start();
+            }
         }
 
         public void Stop()

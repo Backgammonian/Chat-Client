@@ -4,7 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ChatClient"
+        xmlns:ext="clr-namespace:Extensions"
         mc:Ignorable="d"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing"
         Title="Chat Client" 
         Height="500" 
         Width="900">
@@ -33,36 +36,29 @@
                             <ColumnDefinition Width="1*"/>
                             <ColumnDefinition Width="4*"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel
-                            Grid.Column="0">
-                            <ScrollViewer
-                                VerticalScrollBarVisibility="Auto"
-                                HorizontalScrollBarVisibility="Auto"
-                                Margin="4">
-                                <ListBox
-                                    SelectedItem="{Binding SelectedRoom}"
-                                    ItemsSource="{Binding RoomsList.AsObservable}">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel>
-                                                <Border
-                                                    Style="{StaticResource borderRoom}">
-                                                    <TextBlock
-                                                        Style="{StaticResource roomTextBlock}">
-                                                        <TextBlock.Text>
-                                                            <MultiBinding StringFormat="{}{0}&#10;({1})">
-                                                                <Binding Path="Name"/>
-                                                                <Binding Path="ID"/>
-                                                            </MultiBinding>
-                                                        </TextBlock.Text>
-                                                    </TextBlock>
-                                                </Border>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </ScrollViewer>
-                        </StackPanel>
+                        <ListBox
+                            Grid.Column="0"
+                            Margin="4"
+                            SelectedItem="{Binding SelectedRoom}"
+                            ItemsSource="{Binding RoomsList.AsObservable}"
+                            ext:ListBoxBehavior.AutoScroll="True">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        Style="{StaticResource borderRoom}">
+                                        <TextBlock
+                                            Style="{StaticResource roomTextBlock}">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0}&#10;({1})">
+                                                    <Binding Path="Name"/>
+                                                    <Binding Path="ID"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                         <Grid
                             Grid.Column="1">
                             <Grid.RowDefinitions>
@@ -80,45 +76,42 @@
                                     </MultiBinding>
                                 </TextBlock.Text>
                             </TextBlock>
-                            <ScrollViewer
+                            <ListBox
                                 Grid.Row="1"
-                                VerticalScrollBarVisibility="Auto"
-                                HorizontalScrollBarVisibility="Auto"
-                                Margin="4">
-                                <ListBox
-                                    ItemsSource="{Binding RoomMessages.AsObservable}">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border
-                                                Style="{StaticResource borderMessage}">
-                                                <Border.Background>
-                                                    <MultiBinding Converter="{StaticResource messageSourceConverter}">
-                                                        <Binding Path="AuthorsID"/>
-                                                        <Binding Path="DataContext.ID" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}"/>
-                                                    </MultiBinding>
-                                                </Border.Background>
-                                                <StackPanel>
-                                                    <TextBlock
-                                                        Style="{StaticResource baseTextBlock}"
-                                                        Text="{Binding Time}"/>
-                                                    <TextBlock
-                                                        Style="{StaticResource baseTextBlock}">
-                                                        <TextBlock.Text>
-                                                            <MultiBinding StringFormat="{}{0} ({1})">
-                                                                <Binding Path="AuthorsNickname"/>
-                                                                <Binding Path="AuthorsID"/>
-                                                            </MultiBinding>         
-                                                        </TextBlock.Text>
-                                                    </TextBlock>
-                                                    <TextBlock
-                                                        Style="{StaticResource baseTextBlock}"
-                                                        Text="{Binding Content}"/>
-                                                </StackPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
-                            </ScrollViewer>
+                                Margin="4"
+                                ext:ListBoxBehavior.AutoScroll="True"
+                                ItemsSource="{Binding RoomMessages.AsObservable}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border
+                                            Style="{StaticResource borderMessage}">
+                                            <Border.Background>
+                                                <MultiBinding Converter="{StaticResource messageSourceConverter}">
+                                                    <Binding Path="AuthorsID"/>
+                                                    <Binding Path="DataContext.ID" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}"/>
+                                                </MultiBinding>
+                                            </Border.Background>
+                                            <StackPanel>
+                                                <TextBlock
+                                                    Style="{StaticResource baseTextBlock}"
+                                                    Text="{Binding Time, Converter={StaticResource dateTimeConverter}}"/>
+                                                <TextBlock
+                                                    Style="{StaticResource baseTextBlock}">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}{0} ({1})">
+                                                            <Binding Path="AuthorsNickname"/>
+                                                            <Binding Path="AuthorsID"/>
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                                <TextBlock
+                                                    Style="{StaticResource baseTextBlock}"
+                                                    Text="{Binding Content}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                             <Grid
                                 Grid.Row="2">
                                 <Grid.ColumnDefinitions>
@@ -142,6 +135,52 @@
                                 </Button>
                             </Grid>
                         </Grid>
+                    </Grid>
+                </TabItem.Content>
+            </TabItem>
+            <TabItem>
+                <TabItem.Header>
+                    <StackPanel
+                        Orientation="Horizontal">
+                        <Rectangle
+                            Style="{StaticResource rectangle}"/>
+                        <TextBlock
+                            Style="{StaticResource titleTextBlock}"
+                            Text="Clients"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <TabItem.Content>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            Grid.Row="0"
+                            Style="{StaticResource baseTextBlock}"
+                            Margin="4"
+                            Text="{Binding ServerAddress, StringFormat={}Clients of server {0}}"/>
+                        <ListBox
+                            Grid.Row="1"
+                            Margin="4"
+                            ItemsSource="{Binding ClientsListOfServer.AsObservable}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <TextBlock
+                                            Style="{StaticResource titleTextBlock}"
+                                            Text="{Binding Nickname}"/>
+                                        <TextBlock
+                                            Style="{StaticResource baseTextBlock}"
+                                            Text="{Binding ID, StringFormat={}ID: {0}}"/>
+                                        <TextBlock
+                                            Style="{StaticResource baseTextBlock}"
+                                            Text="{Binding Address}"/>
+                                        <Separator/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </Grid>
                 </TabItem.Content>
             </TabItem>
@@ -186,9 +225,16 @@
                         <TextBox
                             Grid.Row="4"
                             Style="{StaticResource baseTextBox}"
-                            Text="{Binding Nickname}"
+                            Text="{Binding Path=Nickname, UpdateSourceTrigger=Explicit}"
+                            ext:InputBindingsManager.UpdatePropertySourceWhenEnterPressed="TextBox.Text"
                             MinWidth="300"
                             HorizontalAlignment="Left"/>
+                        <TextBlock
+                            Grid.Row="5"
+                            Style="{StaticResource baseTextBlock}"
+                            Visibility="{Binding NicknameUpdatedStatus, Converter={StaticResource booleanToVisibilityConverter}}"
+                            Text="Nickname changed!"
+                            FontStyle="Oblique"/>
                         <TextBlock
                             Grid.Row="6"
                             Style="{StaticResource baseTextBlock}"

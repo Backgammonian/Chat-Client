@@ -3,6 +3,8 @@
                     xmlns:local="clr-namespace:ChatClient">
 
     <local:MessageSourceConverter x:Key="messageSourceConverter"/>
+    <local:DateTimeConverter x:Key="dateTimeConverter"/>
+    <BooleanToVisibilityConverter x:Key="booleanToVisibilityConverter"/>
 
     <Style x:Key="baseTextBlock" TargetType="TextBlock">
         <Setter Property="FontSize" Value="14"/>

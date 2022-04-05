@@ -5,12 +5,14 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Newtonsoft.Json;
 using Meziantou.Framework.WPF.Collections;
 using Shared;
 using ChatMessages;
+using InputBox;
 
 namespace ChatClient
 {
@@ -19,18 +21,27 @@ namespace ChatClient
         private Client _client;
         private string _nickname;
         private Room _selectedRoom;
+        private bool _nicknameUpdatedStatus;
+        private readonly DispatcherTimer _statusTimer;
 
         public MainWindowViewModel()
         {
+            _statusTimer = new DispatcherTimer();
+            _statusTimer.Interval = new TimeSpan(0, 0, 2);
+            _statusTimer.Tick += (s, e) => NicknameUpdatedStatus = false;
+
             ID = RandomGenerator.GetRandomString(30);
             Nickname = "UserName";
+            NicknameUpdatedStatus = false;
             OnPropertyChanged(nameof(ServerAddress));
             RoomsList = new ConcurrentObservableCollection<Room>();
             RoomMessages = new ConcurrentObservableCollection<Message>();
+            ClientsListOfServer = new ConcurrentObservableCollection<ClientOfServer>();
+
             ConnectToNewServerCommand = new AsyncRelayCommand(ConnectToServer);
             SendMessageCommand = new AsyncRelayCommand(SendMessage);
 
-            NewServerAddress = "192.168.0.14:55000";
+            NewServerAddress = NetworkUtils.GetLocalIPAddress().ToString() + ":55000";
         }
 
         public ICommand ConnectToNewServerCommand { get; }
@@ -41,6 +52,7 @@ namespace ChatClient
         public string ID { get; }
         public ConcurrentObservableCollection<Room> RoomsList { get; }
         public ConcurrentObservableCollection<Message> RoomMessages { get; }
+        public ConcurrentObservableCollection<ClientOfServer> ClientsListOfServer { get; }
 
         public Room SelectedRoom
         {
@@ -68,12 +80,29 @@ namespace ChatClient
                 {
                     SetProperty(ref _nickname, value);
 
+                    NicknameUpdatedStatus = true;
+
                     if (_client != null)
                     {
                         var message = new ClientsNicknamePackage(ID, Nickname);
 
                         Task.Run(() => _client.Send(message.GetByteArray()));
                     }
+                }
+            }
+        }
+
+        public bool NicknameUpdatedStatus
+        {
+            get => _nicknameUpdatedStatus;
+            private set
+            {
+                SetProperty(ref _nicknameUpdatedStatus, value);
+
+                if (NicknameUpdatedStatus)
+                {
+                    _statusTimer.Stop();
+                    _statusTimer.Start();
                 }
             }
         }
@@ -130,6 +159,20 @@ namespace ChatClient
                     }
                     break;
 
+                case PackageTypes.ClientsListUpdated:
+                    Debug.WriteLine("ClientsListUpdated");
+
+                    ClientsListOfServer.Clear();
+                    var clientsOfServer = JsonConvert.DeserializeObject<List<(string, string, string)>>(json);
+                    foreach (var client in clientsOfServer)
+                    {
+                        if (client.Item2 != ID)
+                        {
+                            ClientsListOfServer.Add(new ClientOfServer(client.Item1, client.Item2, client.Item3));
+                        }
+                    }
+                    break;
+
                 default:
                     Debug.WriteLine("Unknown type: " + type);
                     break;
@@ -158,9 +201,11 @@ namespace ChatClient
                 _client.StartListen();
                 OnPropertyChanged(nameof(ServerAddress));
 
-                var message = new ClientsNicknamePackage(ID, Nickname);
+                var idMessage = new ClientsIDPackage(ID);
+                await _client.Send(idMessage.GetByteArray());
 
-                await _client.Send(message.GetByteArray());
+                var nicknameMessage = new ClientsNicknamePackage(ID, Nickname);
+                await _client.Send(nicknameMessage.GetByteArray());
             }
         }
 
@@ -172,10 +217,29 @@ namespace ChatClient
             }
 
             var userMessage = new Message(MessageText, Nickname, ID, DateTime.Now);
-
             var message = new MessageToRoomPackage(userMessage, SelectedRoom.ID);
-
             await _client.Send(message.GetByteArray());
+        }
+
+        public void AskNickname()
+        {
+            var inputBox = new InputBoxUtils();
+            var newNickname = string.Empty;
+            if (inputBox.AskNickname(Nickname, out newNickname))
+            {
+                Nickname = newNickname;
+            }
+        }
+
+        public async void CloseClient()
+        {
+            if (_client != null)
+            {
+                var disconnectMessage = new ClientDisconnectPackage();
+                await _client.Send(disconnectMessage.GetByteArray());
+
+                _client.Stop();
+            }
         }
     }
 }
