@@ -61,7 +61,8 @@ namespace ChatClient
             {
                 SetProperty(ref _selectedRoom, value);
 
-                if (SelectedRoom != null)
+                if (SelectedRoom != null &&
+                    _client != null)
                 {
                     var message = new RequestAllMessagesInRoomPackage(SelectedRoom.ID);
 
@@ -115,10 +116,14 @@ namespace ChatClient
             }
 
             var dataReader = new SimpleReader(e.Data);
-            var type = (PackageTypes)dataReader.GetByte();
-            var json = dataReader.GetString();
 
-            switch (type)
+            if (!dataReader.TryGetByte(out byte type) ||
+                !dataReader.TryGetString(out string json))
+            {
+                return;
+            }
+
+            switch ((PackageTypes)type)
             {
                 case PackageTypes.ListOfRooms:
                     Debug.WriteLine("ListOfRooms");
@@ -188,12 +193,17 @@ namespace ChatClient
 
             if (_client != null)
             {
+                var disconnectMessage = new ClientDisconnectPackage();
+                await _client.Send(disconnectMessage.GetByteArray());
+
                 _client.Stop();
                 _client.DataReceived -= OnDataReceived;
+                _client.ErrorOccured -= OnErrorOccured;
             }
 
             _client = new Client();
             _client.DataReceived += OnDataReceived;
+            _client.ErrorOccured += OnErrorOccured;
 
             var connectionStatus = await _client.Connect(endPoint);
             if (connectionStatus)
@@ -204,6 +214,13 @@ namespace ChatClient
                 var hello = new ClientHelloPackage(ID, Nickname);
                 await _client.Send(hello.GetByteArray());
             }
+        }
+
+        private void OnErrorOccured(object sender, EventArgs e)
+        {
+            Debug.WriteLine("(OnErrorOccured)");
+
+            _client.Stop();
         }
 
         private async Task SendMessage()
@@ -218,6 +235,8 @@ namespace ChatClient
             var userMessage = new Message(MessageText, Nickname, ID, DateTime.Now);
             var message = new MessageToRoomPackage(userMessage, SelectedRoom.ID);
             await _client.Send(message.GetByteArray());
+
+            MessageText = "";
         }
 
         public void AskNickname()

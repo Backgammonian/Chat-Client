@@ -79,6 +79,8 @@
                             <ListBox
                                 Grid.Row="1"
                                 Margin="4"
+                                HorizontalContentAlignment="Stretch"
+                                ScrollViewer.CanContentScroll="False"
                                 ext:ListBoxBehavior.AutoScroll="True"
                                 ItemsSource="{Binding RoomMessages.AsObservable}">
                                 <ListBox.ItemTemplate>
@@ -86,17 +88,31 @@
                                         <Border
                                             Style="{StaticResource borderMessage}">
                                             <Border.Background>
-                                                <MultiBinding Converter="{StaticResource messageSourceConverter}">
+                                                <MultiBinding Converter="{StaticResource messageColorConverter}">
                                                     <Binding Path="AuthorsID"/>
                                                     <Binding Path="DataContext.ID" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}"/>
                                                 </MultiBinding>
                                             </Border.Background>
+                                            <Border.HorizontalAlignment>
+                                                <MultiBinding Converter="{StaticResource messageHorizontalAlignmentConverter}">
+                                                    <Binding Path="AuthorsID"/>
+                                                    <Binding Path="DataContext.ID" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}"/>
+                                                </MultiBinding>
+                                            </Border.HorizontalAlignment>
                                             <StackPanel>
                                                 <TextBlock
                                                     Style="{StaticResource baseTextBlock}"
+                                                    FontStyle="Oblique"
                                                     Text="{Binding Time, Converter={StaticResource dateTimeConverter}}"/>
                                                 <TextBlock
-                                                    Style="{StaticResource baseTextBlock}">
+                                                    Style="{StaticResource baseTextBlock}"
+                                                    FontStyle="Oblique">
+                                                    <TextBlock.Visibility>
+                                                        <MultiBinding Converter="{StaticResource hideOwnNameInMessageConverter}">
+                                                            <Binding Path="AuthorsID"/>
+                                                            <Binding Path="DataContext.ID" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType=Window}"/>
+                                                        </MultiBinding>
+                                                    </TextBlock.Visibility>
                                                     <TextBlock.Text>
                                                         <MultiBinding StringFormat="{}{0} ({1})">
                                                             <Binding Path="AuthorsNickname"/>
@@ -146,7 +162,7 @@
                             Style="{StaticResource rectangle}"/>
                         <TextBlock
                             Style="{StaticResource titleTextBlock}"
-                            Text="Clients"/>
+                            Text="Server's clients"/>
                     </StackPanel>
                 </TabItem.Header>
                 <TabItem.Content>

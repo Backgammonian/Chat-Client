@@ -14,6 +14,8 @@ namespace Shared
             _position = 0;
         }
 
+        public int AvailableBytes => _data.Length - _position;
+
         public byte GetByte()
         {
             var result = _data[_position];
@@ -59,6 +61,52 @@ namespace Shared
         {
             Buffer.BlockCopy(_data, _position, destination, 0, count);
             _position += count;
+        }
+
+        public bool TryGetByte(out byte result)
+        {
+            if (AvailableBytes >= 1)
+            {
+                result = GetByte();
+                return true;
+            }
+
+            result = 0;
+            return false;
+        }
+
+        public bool TryGetInt(out int result)
+        {
+            if (AvailableBytes >= 4)
+            {
+                result = GetInt();
+                return true;
+            }
+
+            result = 0;
+            return false;
+        }
+
+        public bool TryGetString(out string result)
+        {
+            if (TryGetInt(out int stringLength))
+            {
+                if (stringLength <= 0)
+                {
+                    result = string.Empty;
+                    return false;
+                }
+
+                if (AvailableBytes >= stringLength)
+                {
+                    result = Encoding.UTF8.GetString(_data, _position, stringLength);
+                    _position += stringLength;
+                    return true;
+                }
+            }
+
+            result = string.Empty;
+            return false;
         }
     }
 }

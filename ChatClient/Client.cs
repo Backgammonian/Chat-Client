@@ -29,6 +29,7 @@ namespace ChatClient
             _listenTask = new Task(async () => await Listen(token));
         }
 
+        public event EventHandler ErrorOccured;
         public event EventHandler<NetworkDataReceivedEventArgs> DataReceived;
 
         public IPEndPoint ServerAddress { get; private set; }
@@ -49,6 +50,8 @@ namespace ChatClient
             {
                 Debug.WriteLine(e);
 
+                ErrorOccured?.Invoke(this, EventArgs.Empty);
+
                 return false;
             }
         }
@@ -65,6 +68,8 @@ namespace ChatClient
             catch (Exception e)
             {
                 Debug.WriteLine(e);
+
+                ErrorOccured?.Invoke(this, EventArgs.Empty);
             }
         }
 
@@ -83,6 +88,9 @@ namespace ChatClient
             catch (Exception e)
             {
                 Debug.WriteLine(e);
+                _tokenSource.Cancel();
+
+                ErrorOccured?.Invoke(this, EventArgs.Empty);
 
                 return Array.Empty<byte>();
             }
