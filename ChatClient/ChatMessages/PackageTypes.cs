@@ -2,8 +2,8 @@
 {
     public enum PackageTypes : byte
     {
-        ClientsNickname = 10, //client -> server
-        ClientsID, //client -> server
+        ClientHello = 10, //client -> server
+        ClientsNewNickname, //client -> server
         ListOfRooms, //server -> client
         RequestAllMessagesInRoom, //client -> server
         ResponseAllMessagesInRoom, //server -> client

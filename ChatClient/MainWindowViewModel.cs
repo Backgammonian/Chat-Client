@@ -84,7 +84,7 @@ namespace ChatClient
 
                     if (_client != null)
                     {
-                        var message = new ClientsNicknamePackage(ID, Nickname);
+                        var message = new ClientsNewNicknamePackage(ID, Nickname);
 
                         Task.Run(() => _client.Send(message.GetByteArray()));
                     }
@@ -201,11 +201,8 @@ namespace ChatClient
                 _client.StartListen();
                 OnPropertyChanged(nameof(ServerAddress));
 
-                var idMessage = new ClientsIDPackage(ID);
-                await _client.Send(idMessage.GetByteArray());
-
-                var nicknameMessage = new ClientsNicknamePackage(ID, Nickname);
-                await _client.Send(nicknameMessage.GetByteArray());
+                var hello = new ClientHelloPackage(ID, Nickname);
+                await _client.Send(hello.GetByteArray());
             }
         }
 
@@ -215,6 +212,8 @@ namespace ChatClient
             {
                 return;
             }
+
+            Debug.WriteLine("(SendMessage)");
 
             var userMessage = new Message(MessageText, Nickname, ID, DateTime.Now);
             var message = new MessageToRoomPackage(userMessage, SelectedRoom.ID);

@@ -16,6 +16,7 @@ namespace ChatMessages
             var writer = new SimpleWriter();
 
             writer.Put((byte)Type);
+            writer.Put(string.Empty);
 
             return writer.Get();
         }
